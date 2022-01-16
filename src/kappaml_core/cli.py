@@ -7,6 +7,9 @@ import argparse
 import logging
 import sys
 
+from river import compose, datasets, facto, metrics, optim, preprocessing, reco
+from river.evaluate import progressive_val_score
+
 from kappaml_core import __version__
 
 __author__ = "Alex Imbrea"
@@ -19,7 +22,7 @@ _logger = logging.getLogger(__name__)
 # ---- Python API ----
 # The functions defined in this section can be imported by users in their
 # Python scripts/interactive interpreter, e.g. via
-# `from kappaml_core.skeleton import fib`,
+# `from kappaml_core.cli import fib`,
 # when using this Python module as a library.
 
 
@@ -39,10 +42,81 @@ def fib(n):
     return a
 
 
+def evaluate(model):
+    X_y = datasets.MovieLens100K()
+    metric = metrics.MAE() + metrics.RMSE()
+    _ = progressive_val_score(
+        X_y, model, metric, print_every=10_000, show_time=True, show_memory=True
+    )
+
+
+MODEL_CHOICES = ["baseline", "funk_mf", "biased_mf", "fm", "greedy", "epsilon_greedy"]
+
+
 def demo(demo_name):
     """Demo all the KappaML models"""
     if demo_name == "baseline":
         print("Baseline model")
+        baseline_params = {
+            "optimizer": optim.SGD(0.025),
+            "l2": 0.0,
+            "initializer": optim.initializers.Zeros(),
+        }
+
+        model = preprocessing.PredClipper(
+            regressor=reco.Baseline(**baseline_params), y_min=1, y_max=5
+        )
+        evaluate(model)
+    elif demo_name == "funk_mf":
+        print("FunkMF model")
+        funk_mf_params = {
+            "n_factors": 10,
+            "optimizer": optim.SGD(0.05),
+            "l2": 0.1,
+            "initializer": optim.initializers.Normal(mu=0.0, sigma=0.1, seed=73),
+        }
+
+        model = preprocessing.PredClipper(
+            regressor=reco.FunkMF(**funk_mf_params), y_min=1, y_max=5
+        )
+        evaluate(model)
+    elif demo_name == "biased_mf":
+        biased_mf_params = {
+            "n_factors": 10,
+            "bias_optimizer": optim.SGD(0.025),
+            "latent_optimizer": optim.SGD(0.05),
+            "weight_initializer": optim.initializers.Zeros(),
+            "latent_initializer": optim.initializers.Normal(mu=0.0, sigma=0.1, seed=73),
+            "l2_bias": 0.0,
+            "l2_latent": 0.0,
+        }
+
+        model = preprocessing.PredClipper(
+            regressor=reco.BiasedMF(**biased_mf_params), y_min=1, y_max=5
+        )
+        evaluate(model)
+    elif demo_name == "fm":
+        print("Facto Machine")
+        fm_params = {
+            "n_factors": 10,
+            "weight_optimizer": optim.SGD(0.025),
+            "latent_optimizer": optim.SGD(0.05),
+            "sample_normalization": False,
+            "l1_weight": 0.0,
+            "l2_weight": 0.0,
+            "l1_latent": 0.0,
+            "l2_latent": 0.0,
+            "intercept": 3,
+            "intercept_lr": 0.01,
+            "weight_initializer": optim.initializers.Zeros(),
+            "latent_initializer": optim.initializers.Normal(mu=0.0, sigma=0.1, seed=73),
+        }
+
+        regressor = compose.Select("user", "item")
+        regressor |= facto.FMRegressor(**fm_params)
+
+        model = preprocessing.PredClipper(regressor=regressor, y_min=1, y_max=5)
+        evaluate(model)
     elif demo_name == "greedy":
         print("Greedy model selection")
     elif demo_name == "epsilon_greedy":
@@ -75,7 +149,7 @@ def parse_args(args):
         "demo_name",
         help="Name of the model to be used",
         type=str,
-        choices=["baseline", "greedy", "epsilon_greedy"],
+        choices=MODEL_CHOICES,
     )
 
     parser.add_argument(
