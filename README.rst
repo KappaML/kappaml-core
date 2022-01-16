@@ -23,11 +23,6 @@
         :alt: Twitter
         :target: https://twitter.com/kappaml-core
 
-.. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-    :alt: Project generated with PyScaffold
-    :target: https://pyscaffold.org/
-
-|
 
 ============
 kappaml-core
