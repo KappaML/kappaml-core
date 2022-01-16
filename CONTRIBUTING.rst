@@ -314,8 +314,8 @@ on PyPI_, the following steps can be used to release a new version for
 .. |the repository service| replace:: GitHub
 .. |contribute button| replace:: "Create pull request"
 
-.. _repository: https://github.com/<USERNAME>/kappaml-core
-.. _issue tracker: https://github.com/<USERNAME>/kappaml-core/issues
+.. _repository: https://github.com/KappaML/kappaml-core
+.. _issue tracker: https://github.com/KappaML/kappaml-core/issues
 .. <-- end -->
 
 
