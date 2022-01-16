@@ -28,13 +28,6 @@ __license__ = "Apache-2.0"
 _logger = logging.getLogger(__name__)
 
 
-# ---- Python API ----
-# The functions defined in this section can be imported by users in their
-# Python scripts/interactive interpreter, e.g. via
-# `from kappaml_core.cli import fib`,
-# when using this Python module as a library.
-
-
 def fib(n):
     """Fibonacci example function
 
