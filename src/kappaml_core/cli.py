@@ -19,7 +19,7 @@ from river import (
 )
 from river.evaluate import progressive_val_score
 
-from kappaml_core import __version__
+from kappaml_core import __version__, meta
 
 __author__ = "Alex Imbrea"
 __copyright__ = "Alex Imbrea"
@@ -52,7 +52,15 @@ def evaluate(model):
     )
 
 
-MODEL_CHOICES = ["baseline", "funk_mf", "biased_mf", "fm", "greedy", "epsilon_greedy"]
+MODEL_CHOICES = [
+    "baseline",
+    "funk_mf",
+    "biased_mf",
+    "fm",
+    "greedy",
+    "epsilon_greedy",
+    "meta_regressor",
+]
 
 
 def demo(demo_name):
@@ -156,6 +164,24 @@ def demo(demo_name):
         )
         evaluate(model)
         print(model.bandit)
+    elif demo_name == "meta_regressor":
+        print("Meta regressor model selection")
+        models = [
+            preprocessing.PredClipper(
+                reco.Baseline(
+                    optimizer=optim.SGD(lr=lr),
+                    l2=0.0,
+                    initializer=optim.initializers.Zeros(),
+                ),
+                y_min=1,
+                y_max=5,
+            )
+            for lr in [0.025, 0.05, 0.1]
+        ]
+
+        model = meta.MetaRegressor(models=models)
+        evaluate(model)
+        # print(model.metamodel)
     pass
 
 
