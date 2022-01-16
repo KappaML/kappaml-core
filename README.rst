@@ -7,6 +7,9 @@
 .. image:: https://img.shields.io/conda/vn/conda-forge/kappaml-core.svg
     :alt: Conda-Forge
     :target: https://anaconda.org/conda-forge/kappaml-core
+.. .. image:: https://coveralls.io/repos/github/KappaML/kappaml-core/badge.svg?branch=master
+..     :alt: Coveralls
+..     :target: https://coveralls.io/github/KappaML/kappaml-core?branch=master
 .. image:: https://pepy.tech/badge/kappaml-core/month
     :alt: Monthly Downloads
     :target: https://pepy.tech/project/kappaml-core
