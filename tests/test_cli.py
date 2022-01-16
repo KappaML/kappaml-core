@@ -16,10 +16,21 @@ def test_fib():
         fib(-10)
 
 
-def test_main(capsys):
-    """CLI Tests"""
-    # capsys is a pytest fixture that allows asserts agains stdout/stderr
-    # https://docs.pytest.org/en/stable/capture.html
-    main(["7"])
+def test_main_fib(capsys):
+    """CLI Test Fib Command"""
+    main(["fib", "7"])
     captured = capsys.readouterr()
     assert "The 7-th Fibonacci number is 13" in captured.out
+
+
+def test_main_demo(capsys):
+    """CLI Test Demo Command"""
+    main(["demo", "baseline"])
+    captured = capsys.readouterr()
+    assert "Baseline model" in captured.out
+    main(["demo", "greedy"])
+    captured = capsys.readouterr()
+    assert "Greedy model selection" in captured.out
+    main(["demo", "epsilon_greedy"])
+    captured = capsys.readouterr()
+    assert "Epsilon-Greedy model selection" in captured.out

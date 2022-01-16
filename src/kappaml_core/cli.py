@@ -1,23 +1,6 @@
 """
 This is a skeleton file that can serve as a starting point for a Python
-console script. To run this script uncomment the following lines in the
-``[options.entry_points]`` section in ``setup.cfg``::
-
-    console_scripts =
-         fibonacci = kappaml_core.cli:run
-
-Then run ``pip install .`` (or ``pip install -e .`` for editable mode)
-which will install the command ``fibonacci`` inside your current environment.
-
-Besides console scripts, the header (i.e. until ``_logger``...) of this file can
-also be used as template for Python modules.
-
-Note:
-    This skeleton file can be safely removed if not needed!
-
-References:
-    - https://setuptools.pypa.io/en/latest/userguide/entry_point.html
-    - https://pip.pypa.io/en/stable/reference/pip_install
+console script.
 """
 
 import argparse
@@ -56,6 +39,17 @@ def fib(n):
     return a
 
 
+def demo(demo_name):
+    """Demo all the KappaML models"""
+    if demo_name == "baseline":
+        print("Baseline model")
+    elif demo_name == "greedy":
+        print("Greedy model selection")
+    elif demo_name == "epsilon_greedy":
+        print("Epsilon-Greedy model selection")
+    pass
+
+
 # ---- CLI ----
 # The functions defined in this section are wrappers around the main Python
 # API allowing them to be called directly from the terminal as a CLI
@@ -72,13 +66,31 @@ def parse_args(args):
     Returns:
       :obj:`argparse.Namespace`: command line parameters namespace
     """
-    parser = argparse.ArgumentParser(description="Just a Fibonacci demonstration")
+    parser = argparse.ArgumentParser(description="KappaML Core CLI")
+    subparsers = parser.add_subparsers(dest="command")
+    fib_parser = subparsers.add_parser("fib", help="Fibonacci example")
+    fib_parser.add_argument("n", help="n-th Fibonacci number", type=int)
+    demo_parse = subparsers.add_parser("demo", help="Demo all the KappaML models")
+    demo_parse.add_argument(
+        "demo_name",
+        help="Name of the model to be used",
+        type=str,
+        choices=["baseline", "greedy", "epsilon_greedy"],
+    )
+
     parser.add_argument(
         "--version",
         action="version",
         version="kappaml-core {ver}".format(ver=__version__),
     )
-    parser.add_argument(dest="n", help="n-th Fibonacci number", type=int, metavar="INT")
+    parser.add_argument(
+        "-vv",
+        "--very-verbose",
+        dest="loglevel",
+        help="set loglevel to DEBUG",
+        action="store_const",
+        const=logging.DEBUG,
+    )
     parser.add_argument(
         "-v",
         "--verbose",
@@ -88,12 +100,12 @@ def parse_args(args):
         const=logging.INFO,
     )
     parser.add_argument(
-        "-vv",
-        "--very-verbose",
+        "-q",
+        "--quiet",
         dest="loglevel",
-        help="set loglevel to DEBUG",
+        help="set loglevel to ERROR",
         action="store_const",
-        const=logging.DEBUG,
+        const=logging.ERROR,
     )
     return parser.parse_args(args)
 
@@ -111,10 +123,8 @@ def setup_logging(loglevel):
 
 
 def main(args):
-    """Wrapper allowing :func:`fib` to be called with string arguments in a CLI fashion
-
-    Instead of returning the value from :func:`fib`, it prints the result to the
-    ``stdout`` in a nicely formatted message.
+    """Wrapper allowing :func:`fib` and :func:`demo` to be called with string arguments
+    in a CLI fashion
 
     Args:
       args (List[str]): command line parameters as list of strings
@@ -122,9 +132,17 @@ def main(args):
     """
     args = parse_args(args)
     setup_logging(args.loglevel)
-    _logger.debug("Starting crazy calculations...")
-    print("The {}-th Fibonacci number is {}".format(args.n, fib(args.n)))
-    _logger.info("Script ends here")
+    _logger.debug("Starting kappaml-core %s", __version__)
+    _logger.debug("Arguments: %s", args)
+
+    if args.command == "fib":
+        _logger.debug("Starting crazy calculations...")
+        print("The {}-th Fibonacci number is {}".format(args.n, fib(args.n)))
+        _logger.info("Done.")
+    elif args.command == "demo":
+        _logger.debug("Starting demo...")
+        demo(args.demo_name)
+        _logger.info("Done.")
 
 
 def run():
