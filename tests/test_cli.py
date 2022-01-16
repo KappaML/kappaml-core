@@ -1,6 +1,6 @@
 import pytest
 
-from kappaml_core.skeleton import fib, main
+from kappaml_core.cli import fib, main
 
 __author__ = "Alex Imbrea"
 __copyright__ = "Alex Imbrea"
