@@ -7,7 +7,16 @@ import argparse
 import logging
 import sys
 
-from river import compose, datasets, facto, metrics, optim, preprocessing, reco
+from river import (
+    compose,
+    datasets,
+    facto,
+    metrics,
+    model_selection,
+    optim,
+    preprocessing,
+    reco,
+)
 from river.evaluate import progressive_val_score
 
 from kappaml_core import __version__
@@ -45,8 +54,8 @@ def fib(n):
 def evaluate(model):
     X_y = datasets.MovieLens100K()
     metric = metrics.MAE() + metrics.RMSE()
-    _ = progressive_val_score(
-        X_y, model, metric, print_every=10_000, show_time=True, show_memory=True
+    return progressive_val_score(
+        X_y, model, metric, print_every=25_000, show_time=True, show_memory=True
     )
 
 
@@ -119,8 +128,41 @@ def demo(demo_name):
         evaluate(model)
     elif demo_name == "greedy":
         print("Greedy model selection")
+        models = [
+            preprocessing.PredClipper(
+                reco.Baseline(
+                    optimizer=optim.SGD(lr=lr),
+                    l2=0.0,
+                    initializer=optim.initializers.Zeros(),
+                ),
+                y_min=1,
+                y_max=5,
+            )
+            for lr in [0.025, 0.05, 0.1]
+        ]
+
+        model = model_selection.GreedyRegressor(models=models)
+        evaluate(model)
     elif demo_name == "epsilon_greedy":
         print("Epsilon-Greedy model selection")
+        models = [
+            preprocessing.PredClipper(
+                reco.Baseline(
+                    optimizer=optim.SGD(lr=lr),
+                    l2=0.0,
+                    initializer=optim.initializers.Zeros(),
+                ),
+                y_min=1,
+                y_max=5,
+            )
+            for lr in [0.025, 0.05, 0.1]
+        ]
+
+        model = model_selection.EpsilonGreedyRegressor(
+            models=models, epsilon=0.1, decay=0.001, burn_in=100, seed=1
+        )
+        evaluate(model)
+        print(model.bandit)
     pass
 
 
