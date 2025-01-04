@@ -18,7 +18,7 @@ repos:
         args: ["--fix=auto"] # replace 'auto' with 'lf' to enforce Linux/Mac line endings or 'crlf' for Windows
 
   - repo: https://github.com/psf/black
-    rev: 21.12b0
+    rev: 24.10.0
     hooks:
       - id: black
 
@@ -28,7 +28,7 @@ repos:
       - id: isort
         args: ["-l 88"]
 
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1
     hooks:
       - id: flake8

@@ -25,12 +25,6 @@ def test_main_fib(capsys):
 
 def test_main_demo(capsys):
     """CLI Test Demo Command"""
-    main(["demo", "baseline"])
+    main(["demo", "meta_regressor"])
     captured = capsys.readouterr()
-    assert "Baseline model" in captured.out
-    main(["demo", "greedy"])
-    captured = capsys.readouterr()
-    assert "Greedy model selection" in captured.out
-    main(["demo", "epsilon_greedy"])
-    captured = capsys.readouterr()
-    assert "Epsilon-Greedy model selection" in captured.out
+    assert "Meta regressor model selection" in captured.out

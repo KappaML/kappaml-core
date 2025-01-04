@@ -7,17 +7,11 @@ import argparse
 import logging
 import sys
 
-from river import (
-    compose,
-    datasets,
-    facto,
-    metrics,
-    model_selection,
-    optim,
-    preprocessing,
-    reco,
-)
+from river import compose, datasets, facto, metrics, optim, preprocessing
 from river.evaluate import progressive_val_score
+from river.linear_model import LinearRegression
+from river.model_selection import GreedyRegressor
+from river.reco import Baseline, BiasedMF, FunkMF
 
 from kappaml_core import __version__, meta
 
@@ -45,7 +39,7 @@ def fib(n):
 
 
 def evaluate(model):
-    X_y = datasets.MovieLens100K()
+    X_y = datasets.Phishing()
     metric = metrics.MAE() + metrics.RMSE()
     return progressive_val_score(
         X_y, model, metric, print_every=25_000, show_time=True, show_memory=True
@@ -58,7 +52,6 @@ MODEL_CHOICES = [
     "biased_mf",
     "fm",
     "greedy",
-    "epsilon_greedy",
     "meta_regressor",
 ]
 
@@ -74,7 +67,7 @@ def demo(demo_name):
         }
 
         model = preprocessing.PredClipper(
-            regressor=reco.Baseline(**baseline_params), y_min=1, y_max=5
+            regressor=Baseline(**baseline_params), y_min=1, y_max=5
         )
         evaluate(model)
     elif demo_name == "funk_mf":
@@ -87,7 +80,7 @@ def demo(demo_name):
         }
 
         model = preprocessing.PredClipper(
-            regressor=reco.FunkMF(**funk_mf_params), y_min=1, y_max=5
+            regressor=FunkMF(**funk_mf_params), y_min=1, y_max=5
         )
         evaluate(model)
     elif demo_name == "biased_mf":
@@ -102,7 +95,7 @@ def demo(demo_name):
         }
 
         model = preprocessing.PredClipper(
-            regressor=reco.BiasedMF(**biased_mf_params), y_min=1, y_max=5
+            regressor=BiasedMF(**biased_mf_params), y_min=1, y_max=5
         )
         evaluate(model)
     elif demo_name == "fm":
@@ -131,7 +124,7 @@ def demo(demo_name):
         print("Greedy model selection")
         models = [
             preprocessing.PredClipper(
-                reco.Baseline(
+                Baseline(
                     optimizer=optim.SGD(lr=lr),
                     l2=0.0,
                     initializer=optim.initializers.Zeros(),
@@ -142,37 +135,13 @@ def demo(demo_name):
             for lr in [0.025, 0.05, 0.1]
         ]
 
-        model = model_selection.GreedyRegressor(models=models)
+        model = GreedyRegressor(models=models)
         evaluate(model)
-    elif demo_name == "epsilon_greedy":
-        print("Epsilon-Greedy model selection")
-        models = [
-            preprocessing.PredClipper(
-                reco.Baseline(
-                    optimizer=optim.SGD(lr=lr),
-                    l2=0.0,
-                    initializer=optim.initializers.Zeros(),
-                ),
-                y_min=1,
-                y_max=5,
-            )
-            for lr in [0.025, 0.05, 0.1]
-        ]
-
-        model = model_selection.EpsilonGreedyRegressor(
-            models=models, epsilon=0.1, decay=0.001, burn_in=100, seed=1
-        )
-        evaluate(model)
-        print(model.bandit)
     elif demo_name == "meta_regressor":
         print("Meta regressor model selection")
         models = [
             preprocessing.PredClipper(
-                reco.Baseline(
-                    optimizer=optim.SGD(lr=lr),
-                    l2=0.0,
-                    initializer=optim.initializers.Zeros(),
-                ),
+                LinearRegression(optimizer=optim.SGD(lr=lr)),
                 y_min=1,
                 y_max=5,
             )
@@ -181,7 +150,6 @@ def demo(demo_name):
 
         model = meta.MetaRegressor(models=models)
         evaluate(model)
-        # print(model.metamodel)
     pass
 
 
