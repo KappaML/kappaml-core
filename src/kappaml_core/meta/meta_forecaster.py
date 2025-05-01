@@ -1,8 +1,8 @@
 from typing import List, Optional
 
 from river import metrics
-from river.base import Forecaster
 from river.metrics import MAE
+from river.time_series.base import Forecaster
 
 
 class MetaForecaster(Forecaster):
@@ -16,7 +16,7 @@ class MetaForecaster(Forecaster):
     ----------
     models : List[Forecaster]
         List of forecasting models to ensemble
-    metric : metrics.Metric, optional (default=MAE())
+    metric : metrics.base.Metric, optional (default=MAE())
         Metric used to evaluate and select models
     window_size : int, optional (default=10)
         Size of the rolling window used for model evaluation
@@ -30,7 +30,7 @@ class MetaForecaster(Forecaster):
     def __init__(
         self,
         models: List[Forecaster],
-        metric: Optional[metrics.Metric] = None,
+        metric: Optional[metrics.base.Metric] = None,
         window_size: int = 10,
         combination_method: str = "dynamic",
     ):

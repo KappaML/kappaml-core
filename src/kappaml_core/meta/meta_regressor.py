@@ -51,7 +51,7 @@ class MetaRegressor(ModelSelectionRegressor):
         self.metrics = [deepcopy(metric) for _ in range(len(self))]
 
         self._best_model = models[0]
-        self._best_metric = metric
+        self._best_metric = self.metrics[0]
 
         self.mfe = MFE(groups=self.mfe_groups)
 
