@@ -60,7 +60,7 @@ class MetaRegressor(ModelSelectionRegressor):
         self._best_model = models[0]
         self._best_metric = self.metrics[0]
 
-        self.mfe = MFE(groups=self.mfe_groups)
+        self.mfe = MFE(groups=self.mfe_groups, suppress_warnings=True)
 
         # Window of (x, y) pairs for meta-feature extraction
         self.window_data_x = deque(maxlen=window_size)
