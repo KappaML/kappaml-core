@@ -4,10 +4,10 @@ from typing import List
 
 import numpy as np
 from pymfe.mfe import MFE
-from river.base import Regressor
-from river.linear_model import LinearRegression
+from river.base import Classifier, Regressor
 from river.metrics import MAE
 from river.model_selection.base import ModelSelectionRegressor
+from river.tree import HoeffdingTreeClassifier
 
 
 class MetaRegressor(ModelSelectionRegressor):
@@ -21,8 +21,8 @@ class MetaRegressor(ModelSelectionRegressor):
     ----------
     models: list of Regressor
         A list of base regressor models.
-    meta_learner: Regressor
-        default=LinearRegression
+    meta_learner: Classifier
+        default=LogisticRegression
         Meta learner used to predict the best base estimator.
     metric: Metric
         default=MAE
@@ -43,7 +43,7 @@ class MetaRegressor(ModelSelectionRegressor):
     def __init__(
         self,
         models: List[Regressor],
-        meta_learner: Regressor = LinearRegression(),
+        meta_learner: Classifier = HoeffdingTreeClassifier(),
         metric=MAE(),
         mfe_groups: list = ["general"],
         window_size: int = 100,
@@ -176,9 +176,10 @@ class MetaRegressor(ModelSelectionRegressor):
             # use it to predict best model
             if current_meta_features is not None:
                 try:
-                    predicted_model_idx = int(
-                        round(self.meta_learner.predict_one(current_meta_features))
+                    meta_learner_prediction = self.meta_learner.predict_one(
+                        current_meta_features
                     )
+                    predicted_model_idx = int(round(meta_learner_prediction))
                     # Ensure index is valid
                     predicted_model_idx = max(
                         0, min(predicted_model_idx, len(self.models) - 1)
