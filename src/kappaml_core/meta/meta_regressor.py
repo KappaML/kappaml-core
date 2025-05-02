@@ -31,6 +31,9 @@ class MetaRegressor(ModelSelectionRegressor):
         Groups of meta-features to use from PyMFE
     window_size: int (default=100)
         The size of the window used for extracting meta-features.
+    window_slide_size: int (default=10)
+        The number of samples after which the window slides
+        and meta-features are extracted.
 
     Notes
     -----
@@ -44,10 +47,12 @@ class MetaRegressor(ModelSelectionRegressor):
         metric=MAE(),
         mfe_groups: list = ["general", "statistical", "info-theory"],
         window_size: int = 100,
+        window_slide_size: int = 10,
     ):
         super().__init__(models, metric)  # type: ignore
         self.mfe_groups = mfe_groups
         self.window_size = window_size
+        self.window_slide_size = window_slide_size
         self.meta_learner = meta_learner
 
         self.metrics = [deepcopy(metric) for _ in range(len(self))]
@@ -69,6 +74,9 @@ class MetaRegressor(ModelSelectionRegressor):
 
         # To track the index of the best model for each window
         self.best_model_indices = []
+
+        # Counter to keep track of samples since last window slide
+        self.sample_counter = 0
 
     def _extract_meta_features(self):
         """Extract meta-features from the current window."""
@@ -112,6 +120,7 @@ class MetaRegressor(ModelSelectionRegressor):
         # Store data in window
         self.window_data_x.append(x)
         self.window_data_y.append(y)
+        self.sample_counter += 1
 
         # Update all models and their metrics
         for i, (model, metric) in enumerate(zip(self.models, self.metrics)):
@@ -127,8 +136,12 @@ class MetaRegressor(ModelSelectionRegressor):
                 self._best_model = model
                 self._best_metric = metric
 
-        # When the window is full, extract meta-features and train meta-learner
-        if len(self.window_data_x) == self.window_size:
+        # When window has enough data and we've received window_slide_size
+        # new samples since the last update
+        if (
+            len(self.window_data_x) >= self.window_size
+            and self.sample_counter >= self.window_slide_size
+        ):
             meta_features = self._extract_meta_features()
 
             if meta_features:
@@ -145,13 +158,16 @@ class MetaRegressor(ModelSelectionRegressor):
                 # Reset window metrics for next window
                 self.window_metrics = [deepcopy(self.metric) for _ in range(len(self))]
 
+                # Reset sample counter
+                self.sample_counter = 0
+
     def predict_one(self, x):
         # First add the data point to the window (without the label yet)
         # This ensures we're always using recent data for meta-feature extraction
         self.window_data_x.append(x)
 
         # If window has enough data, extract meta-features for prediction
-        if len(self.window_data_x) == self.window_size:
+        if len(self.window_data_x) >= self.window_size:
             current_meta_features = self._extract_meta_features()
 
             # If we have extracted meta-features and a trained meta-learner,
@@ -191,7 +207,7 @@ class MetaRegressor(ModelSelectionRegressor):
     @property
     def best_model(self):
         # Extract current meta-features if window is full
-        if len(self.window_data_x) == self.window_size:
+        if len(self.window_data_x) >= self.window_size:
             current_meta_features = self._extract_meta_features()
 
             # If meta-learner is trained and we have current meta-features,
