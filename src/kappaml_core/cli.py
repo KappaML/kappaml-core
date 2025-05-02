@@ -124,11 +124,7 @@ def demo(demo_name):
         print("Greedy model selection")
         models = [
             preprocessing.PredClipper(
-                Baseline(
-                    optimizer=optim.SGD(lr=lr),
-                    l2=0.0,
-                    initializer=optim.initializers.Zeros(),
-                ),
+                LinearRegression(optimizer=optim.SGD(lr=lr)),
                 y_min=1,
                 y_max=5,
             )

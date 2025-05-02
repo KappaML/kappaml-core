@@ -22,22 +22,18 @@ class MetaRegressor(ModelSelectionRegressor):
     models: list of Regressor
         A list of base regressor models.
     meta_learner: Classifier
-        default=LogisticRegression
+        default=HoeffdingTreeClassifier
         Meta learner used to predict the best base estimator.
     metric: Metric
         default=MAE
         Metric used to evaluate the performance of the base regressors.
-    mfe_groups: list (default=['general', 'statistical', 'info-theory'])
+    mfe_groups: list (default=['general'])
         Groups of meta-features to use from PyMFE
-    window_size: int (default=100)
+    window_size: int (default=200)
         The size of the window used for extracting meta-features.
-    window_slide_size: int (default=10)
-        The number of samples after which the window slides
-        and meta-features are extracted.
-
-    Notes
-    -----
-    The meta-regressor uses the PyMFE library to extract meta-features from the stream.
+    meta_update_frequency: int (default=50)
+        How frequently to extract meta-features and update the meta-learner.
+        Higher values mean less frequent updates but more stable meta-model.
     """
 
     def __init__(
@@ -46,19 +42,20 @@ class MetaRegressor(ModelSelectionRegressor):
         meta_learner: Classifier = HoeffdingTreeClassifier(),
         metric=MAE(),
         mfe_groups: list = ["general"],
-        window_size: int = 100,
-        window_slide_size: int = 10,
+        window_size: int = 200,
+        meta_update_frequency: int = 50,
     ):
         super().__init__(models, metric)  # type: ignore
-        self.mfe_groups = mfe_groups
-        self.window_size = window_size
-        self.window_slide_size = window_slide_size
+
         self.meta_learner = meta_learner
 
-        self.metrics = [deepcopy(metric) for _ in range(len(self))]
+        self.mfe_groups = mfe_groups
 
-        self._best_model = models[0]
-        self._best_metric = self.metrics[0]
+        self.window_size = window_size
+        self.meta_update_frequency = meta_update_frequency
+
+        # Track performance of each model globally
+        self.metrics = [deepcopy(metric) for _ in range(len(self))]
 
         self.mfe = MFE(groups=self.mfe_groups, suppress_warnings=True)
 
@@ -69,13 +66,10 @@ class MetaRegressor(ModelSelectionRegressor):
         # Track performance of each model on the current window
         self.window_metrics = [deepcopy(metric) for _ in range(len(self))]
 
-        # Store meta-features for each window
+        # Store most recent meta-features
         self.meta_features = None
 
-        # To track the index of the best model for each window
-        self.best_model_indices = []
-
-        # Counter to keep track of samples since last window slide
+        # Counter to track samples for meta-update frequency
         self.sample_counter = 0
 
     def _extract_meta_features(self):
@@ -106,17 +100,29 @@ class MetaRegressor(ModelSelectionRegressor):
             print(f"Error extracting meta-features: {e}")
             return None
 
-    def _get_best_model_index(self):
+    def _get_best_window_model_index(self):
         """Get the index of the best performing model on the current window."""
-        best_score = float("-inf")
+        best_metric = self.window_metrics[0]
         best_index = 0
 
         for i, metric in enumerate(self.window_metrics):
-            if metric.get() > best_score:
-                best_score = metric.get()
+            if metric.is_better_than(best_metric):
+                best_metric = metric
                 best_index = i
 
-        return best_index
+        return best_index, best_metric.get()
+
+    def _get_best_global_model_index(self):
+        """Get the best global model."""
+        best_metric = self.metrics[0]
+        best_index = 0
+
+        for i, metric in enumerate(self.metrics):
+            if metric.is_better_than(best_metric):
+                best_metric = metric
+                best_index = i
+
+        return best_index, best_metric.get()
 
     def learn_one(self, x, y):
         # Store data in window
@@ -125,7 +131,7 @@ class MetaRegressor(ModelSelectionRegressor):
         self.sample_counter += 1
 
         # Update all models and their metrics
-        for i, (model, metric) in enumerate(zip(self.models, self.metrics)):
+        for i, (model, metric) in enumerate(zip(self, self.metrics)):
             y_pred = model.predict_one(x)
             metric.update(y, y_pred)
             model.learn_one(x, y)
@@ -133,23 +139,16 @@ class MetaRegressor(ModelSelectionRegressor):
             # Update window metrics
             self.window_metrics[i].update(y, y_pred)
 
-            # Update global best model if needed
-            if metric.is_better_than(self._best_metric):
-                self._best_model = model
-                self._best_metric = metric
-
-        # When window has enough data and we've received window_slide_size
-        # new samples since the last update
+        # Only extract meta-features and update meta-learner periodically
         if (
             len(self.window_data_x) >= self.window_size
-            and self.sample_counter >= self.window_slide_size
+            and self.sample_counter >= self.meta_update_frequency
         ):
             meta_features = self._extract_meta_features()
 
             if meta_features:
                 # Get the best model index for this window
-                best_model_idx = self._get_best_model_index()
-                self.best_model_indices.append(best_model_idx)
+                best_model_idx, _ = self._get_best_window_model_index()
 
                 # Train meta-learner to predict the best model index
                 self.meta_learner.learn_one(meta_features, best_model_idx)
@@ -163,68 +162,26 @@ class MetaRegressor(ModelSelectionRegressor):
                 # Reset sample counter
                 self.sample_counter = 0
 
+        return self
+
     def predict_one(self, x):
-        # First add the data point to the window (without the label yet)
-        # This ensures we're always using recent data for meta-feature extraction
-        self.window_data_x.append(x)
-
-        # If window has enough data, extract meta-features for prediction
-        if len(self.window_data_x) >= self.window_size:
-            current_meta_features = self._extract_meta_features()
-
-            # If we have extracted meta-features and a trained meta-learner,
-            # use it to predict best model
-            if current_meta_features is not None:
-                try:
-                    meta_learner_prediction = self.meta_learner.predict_one(
-                        current_meta_features
-                    )
-                    predicted_model_idx = int(round(meta_learner_prediction))
-                    # Ensure index is valid
-                    predicted_model_idx = max(
-                        0, min(predicted_model_idx, len(self.models) - 1)
-                    )
-
-                    # Remove the last x since we haven't called learn_one yet
-                    self.window_data_x.pop()
-
-                    return self.models[predicted_model_idx].predict_one(x)
-                except Exception as e:
-                    print(f"Error predicting with meta-learner: {e}")
-                    # Remove the last x
-                    self.window_data_x.pop()
-            else:
-                # Remove the last x
-                self.window_data_x.pop()
-        else:
-            # Remove the last x if we didn't extract meta-features
-            self.window_data_x.pop()
+        # If we have meta-features and a trained meta-learner, use them
+        if self.meta_features is not None:
+            try:
+                predicted_model_idx = int(
+                    round(self.meta_learner.predict_one(self.meta_features))
+                )
+                # Ensure index is valid
+                predicted_model_idx = max(
+                    0, min(predicted_model_idx, len(self.models) - 1)
+                )
+                return self.models[predicted_model_idx].predict_one(x)
+            except Exception as e:
+                print(f"Error predicting with meta-learner: {e}")
 
         # Fall back to the best model so far if meta-learner prediction fails
-        if self._best_model is not None:
-            return self._best_model.predict_one(x)
-
-        # Default to first model
-        return self.models[0].predict_one(x)
+        return self.best_model.predict_one(x)
 
     @property
     def best_model(self):
-        # Extract current meta-features if window is full
-        if len(self.window_data_x) >= self.window_size:
-            current_meta_features = self._extract_meta_features()
-
-            # If meta-learner is trained and we have current meta-features,
-            # use them for prediction
-            if current_meta_features is not None:
-                try:
-                    predicted_model_idx = int(
-                        round(self.meta_learner.predict_one(current_meta_features))
-                    )
-                    predicted_model_idx = max(
-                        0, min(predicted_model_idx, len(self.models) - 1)
-                    )
-                    return self.models[predicted_model_idx]
-                except Exception:
-                    pass
-
-        return self._best_model
+        return self.models[self._get_best_global_model_index()[0]]
