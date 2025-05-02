@@ -99,6 +99,8 @@ class MetaRegressor(ModelSelectionRegressor):
             features_dict = {
                 name: value for name, value in zip(meta_features[0], meta_features[1])
             }
+            # Remove nan values
+            features_dict = {k: v for k, v in features_dict.items() if not np.isnan(v)}
             return features_dict
         except Exception as e:
             print(f"Error extracting meta-features: {e}")
