@@ -42,7 +42,7 @@ def evaluate(model):
     X_y = datasets.Phishing()
     metric = metrics.MAE() + metrics.RMSE()
     return progressive_val_score(
-        X_y, model, metric, print_every=25_000, show_time=True, show_memory=True
+        X_y, model, metric, print_every=100, show_time=True, show_memory=True
     )
 
 
