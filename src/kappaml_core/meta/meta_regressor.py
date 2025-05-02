@@ -45,7 +45,7 @@ class MetaRegressor(ModelSelectionRegressor):
         models: List[Regressor],
         meta_learner: Regressor = LinearRegression(),
         metric=MAE(),
-        mfe_groups: list = ["general", "statistical", "info-theory"],
+        mfe_groups: list = ["general"],
         window_size: int = 100,
         window_slide_size: int = 10,
     ):
@@ -93,8 +93,8 @@ class MetaRegressor(ModelSelectionRegressor):
         y = np.array(self.window_data_y)
 
         try:
-            self.mfe.fit(X, y)
-            meta_features = self.mfe.extract()
+            self.mfe.fit(X, y, suppress_warnings=True)
+            meta_features = self.mfe.extract(suppress_warnings=True)
             # Convert to dict for easier use with River
             features_dict = {
                 name: value for name, value in zip(meta_features[0], meta_features[1])
