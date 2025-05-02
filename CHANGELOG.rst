@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.0.4
+===========
+
+- Implement MetaRegressor using PyMFE meta-feature extraction
+
 Version 0.0.3
 ===========
 
