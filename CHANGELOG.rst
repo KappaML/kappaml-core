@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 0.0.6
+===========
+
+- Add MetaClassifier
+- Add tests for MetaClassifier
+- Refactor shared code between MetaRegressor and MetaClassifier into MetaEstimator
+
 Version 0.0.5
 ===========
 

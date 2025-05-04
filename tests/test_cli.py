@@ -28,3 +28,10 @@ def test_main_demo(capsys):
     main(["demo", "meta_regressor"])
     captured = capsys.readouterr()
     assert "Meta regressor model selection" in captured.out
+
+
+def test_main_demo_classifier(capsys):
+    """CLI Test Demo Command"""
+    main(["demo", "meta_classifier"])
+    captured = capsys.readouterr()
+    assert "Meta classifier model selection" in captured.out

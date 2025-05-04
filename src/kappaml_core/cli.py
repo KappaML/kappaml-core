@@ -12,6 +12,7 @@ from river.evaluate import progressive_val_score
 from river.linear_model import LinearRegression
 from river.model_selection import GreedyRegressor
 from river.reco import Baseline, BiasedMF, FunkMF
+from river.tree import HoeffdingTreeClassifier
 
 from kappaml_core import __version__, meta
 
@@ -46,6 +47,14 @@ def evaluate(model):
     )
 
 
+def evaluate_classifier(model):
+    X_y = datasets.Elec2()
+    metric = metrics.Accuracy()
+    return progressive_val_score(
+        X_y, model, metric, print_every=200, show_time=True, show_memory=True
+    )
+
+
 MODEL_CHOICES = [
     "baseline",
     "funk_mf",
@@ -53,6 +62,7 @@ MODEL_CHOICES = [
     "fm",
     "greedy",
     "meta_regressor",
+    "meta_classifier",
 ]
 
 
@@ -146,6 +156,12 @@ def demo(demo_name):
 
         model = meta.MetaRegressor(models=models)
         evaluate(model)
+    elif demo_name == "meta_classifier":
+        print("Meta classifier model selection")
+        models = [HoeffdingTreeClassifier(max_depth=depth) for depth in range(1, 5)]
+
+        model = meta.MetaClassifier(models=models)
+        evaluate_classifier(model)
     pass
 
 

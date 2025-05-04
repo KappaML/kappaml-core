@@ -1,30 +1,30 @@
 from typing import List
 
-from river.base import Classifier, Regressor
-from river.metrics import MAE
-from river.model_selection.base import ModelSelectionRegressor
+from river.base import Classifier
+from river.metrics import Accuracy
+from river.model_selection.base import ModelSelectionClassifier
 from river.tree import HoeffdingTreeClassifier
 
 from kappaml_core.meta.base import MetaEstimator
 
 
-class MetaRegressor(MetaEstimator, ModelSelectionRegressor):
-    """Meta-regressor for model selection using meta-learning.
+class MetaClassifier(MetaEstimator, ModelSelectionClassifier):
+    """Meta-classifier.
 
-    This implements a meta-regressor that uses a list of base regressor models
+    This implements a meta-classifier that uses a list of base classifier models
     and a meta learner. The meta learner uses meta features from stream characteristics
-    to select the best base regressor at a given point in time.
+    to select the best base classifier at a given point in time.
 
     Parameters
     ----------
-    models: list of Regressor
-        A list of base regressor models.
+    models: list of Classifier
+        A list of base classifier models.
     meta_learner: Classifier
         default=HoeffdingTreeClassifier
         Meta learner used to predict the best base estimator.
     metric: Metric
-        default=MAE
-        Metric used to evaluate the performance of the base regressors.
+        default=Accuracy
+        Metric used to evaluate the performance of the base classifiers.
     mfe_groups: list (default=['general'])
         Groups of meta-features to use from PyMFE
     window_size: int (default=200)
@@ -36,9 +36,9 @@ class MetaRegressor(MetaEstimator, ModelSelectionRegressor):
 
     def __init__(
         self,
-        models: List[Regressor],
+        models: List[Classifier],
         meta_learner: Classifier = HoeffdingTreeClassifier(),
-        metric=MAE(),
+        metric=Accuracy(),
         mfe_groups: list = ["general"],
         window_size: int = 200,
         meta_update_frequency: int = 50,
