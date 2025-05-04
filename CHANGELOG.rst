@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.0.5
+===========
+
+- Simplify MetaRegressor meta-feature extraction and caching
+
 Version 0.0.4
 ===========
 
