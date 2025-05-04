@@ -141,7 +141,7 @@ def demo(demo_name):
                 y_min=1,
                 y_max=5,
             )
-            for lr in [0.025, 0.05, 0.1]
+            for lr in [0.01, 0.013, 0.025, 0.05, 0.1]
         ]
 
         model = meta.MetaRegressor(models=models)
