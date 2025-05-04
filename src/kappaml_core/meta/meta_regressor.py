@@ -66,11 +66,11 @@ class MetaRegressor(ModelSelectionRegressor):
         # Track performance of each model on the current window
         self.window_metrics = [deepcopy(metric) for _ in range(len(self))]
 
-        # Store most recent meta-features
-        self.meta_features = None
-
         # Counter to track samples for meta-update frequency
         self.sample_counter = 0
+
+        # Track the best model predicted by the meta-learner
+        self._best_model = models[0]
 
     def _extract_meta_features(self):
         """Extract meta-features from the current window."""
@@ -153,8 +153,13 @@ class MetaRegressor(ModelSelectionRegressor):
                 # Train meta-learner to predict the best model index
                 self.meta_learner.learn_one(meta_features, best_model_idx)
 
-                # Store current meta-features for use in predict_one
-                self.meta_features = meta_features
+                # Predict the best model using the meta-learner
+                predicted_model_idx = int(
+                    round(self.meta_learner.predict_one(meta_features))
+                )
+
+                # Update the best model
+                self._best_model = self.models[predicted_model_idx]
 
                 # Reset window metrics for next window
                 self.window_metrics = [deepcopy(self.metric) for _ in range(len(self))]
@@ -165,23 +170,8 @@ class MetaRegressor(ModelSelectionRegressor):
         return self
 
     def predict_one(self, x):
-        # If we have meta-features and a trained meta-learner, use them
-        if self.meta_features is not None:
-            try:
-                predicted_model_idx = int(
-                    round(self.meta_learner.predict_one(self.meta_features))
-                )
-                # Ensure index is valid
-                predicted_model_idx = max(
-                    0, min(predicted_model_idx, len(self.models) - 1)
-                )
-                return self.models[predicted_model_idx].predict_one(x)
-            except Exception as e:
-                print(f"Error predicting with meta-learner: {e}")
-
-        # Fall back to the best model so far if meta-learner prediction fails
-        return self.best_model.predict_one(x)
+        return self._best_model.predict_one(x)
 
     @property
     def best_model(self):
-        return self.models[self._get_best_global_model_index()[0]]
+        return self._best_model
