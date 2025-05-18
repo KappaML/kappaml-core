@@ -35,6 +35,7 @@ MetaClassifier
 
     from river.tree import HoeffdingTreeClassifier
     from river.linear_model import LogisticRegression
+    from river.metrics import Accuracy
     from kappaml_core.meta import MetaClassifier
 
     # Create base models
@@ -68,13 +69,15 @@ MetaRegressor
 
     from river.linear_model import LinearRegression
     from river.tree import HoeffdingTreeRegressor
+    from river.preprocessing import StandardScaler
+    from river.metrics import MAPE
     from kappaml_core.meta import MetaRegressor
 
     # Create base models
     models = [
         LinearRegression(),
         StandardScaler() | LinearRegression(),
-        [LinearRegression(l2=l2) for l2 in range(0, 1, 0.1)]
+        [LinearRegression(l2=l2) for l2 in range(0, 1, 0.1)],
         HoeffdingTreeRegressor()
     ]
 
@@ -91,7 +94,6 @@ MetaRegressor
     for x, y in stream:
         # Make prediction
         y_pred = model.predict_one(x)
-
         # Update the model
         model.learn_one(x, y)
 
