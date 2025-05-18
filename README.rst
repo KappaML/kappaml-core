@@ -25,6 +25,77 @@ kappaml-core
 This library implements experimental online automated machine learning algorithms for the KappaML project.
 
 
+Examples
+========
+
+MetaClassifier
+-------------
+
+.. code-block:: python
+
+    from river.tree import HoeffdingTreeClassifier
+    from river.linear_model import LogisticRegression
+    from kappaml_core.meta import MetaClassifier
+
+    # Create base models
+    models = [
+        HoeffdingTreeClassifier(weighted=True),
+        HoeffdingTreeClassifier(weighted=False),
+        LogisticRegression()
+    ]
+
+    # Initialize meta-classifier
+    model = MetaClassifier(
+        models=models,
+        meta_learner=HoeffdingTreeClassifier(),
+        metric=Accuracy(),
+        mfe_groups=["general"],
+        window_size=200,
+        meta_update_frequency=50
+    )
+
+    for x, y in stream:
+        # Make prediction
+        y_pred = model.predict_one(x)
+
+        # Update the model
+        model.learn_one(x, y)
+
+MetaRegressor
+------------
+
+.. code-block:: python
+
+    from river.linear_model import LinearRegression
+    from river.tree import HoeffdingTreeRegressor
+    from kappaml_core.meta import MetaRegressor
+
+    # Create base models
+    models = [
+        LinearRegression(),
+        StandardScaler() | LinearRegression(),
+        [LinearRegression(l2=l2) for l2 in range(0, 1, 0.1)]
+        HoeffdingTreeRegressor()
+    ]
+
+    # Initialize meta-regressor
+    model = MetaRegressor(
+        models=models,
+        meta_learner=HoeffdingTreeRegressor(),
+        metric=MAPE(),
+        mfe_groups=["general"],
+        window_size=200,
+        meta_update_frequency=50
+    )
+
+    for x, y in stream:
+        # Make prediction
+        y_pred = model.predict_one(x)
+
+        # Update the model
+        model.learn_one(x, y)
+
+
 .. _pyscaffold-notes:
 
 Note
