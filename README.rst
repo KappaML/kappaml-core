@@ -84,7 +84,7 @@ MetaRegressor
     # Initialize meta-regressor
     model = MetaRegressor(
         models=models,
-        meta_learner=HoeffdingTreeRegressor(),
+        meta_learner=HoeffdingTreeClassifier(),
         metric=MAPE(),
         mfe_groups=["general"],
         window_size=200,
